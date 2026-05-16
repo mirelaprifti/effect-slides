@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Effect Template — Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tweaks.css">
+<style>
+  /* ---------- TOKENS ---------- */
+  html[data-theme="dark"] {
+    --bg: #0a0a0b;
+    --fg: #ededf0;
+    --muted: #7a7a82;
+    --muted-2: #4a4a52;
+    --hairline: #1f1f24;
+    --hairline-2: #2a2a31;
+    --panel: #131318;
+    --panel-2: #181820;
+    --accent: oklch(0.72 0.16 28);
+    --accent-dim: oklch(0.72 0.16 28 / 0.18);
+    --k: #c79df0;  /* keyword */
+    --s: #9bd180;  /* string */
+    --c: #5a5a62;  /* comment */
+    --t: #e5b85b;  /* type */
+    --f: #74b2ef;  /* function */
+    --n: #e08c5b;  /* number */
+    --hi: rgba(255,255,255,0.04);
+  }
+  html[data-theme="light"] {
+    --bg: #f7f7f5;
+    --fg: #14141a;
+    --muted: #7a7a82;
+    --muted-2: #b6b6bd;
+    --hairline: #e3e3df;
+    --hairline-2: #d2d2cd;
+    --panel: #efefea;
+    --panel-2: #e6e6e1;
+    --accent: oklch(0.55 0.16 28);
+    --accent-dim: oklch(0.55 0.16 28 / 0.12);
+    --k: #7a3aa8;
+    --s: #2e7d3b;
+    --c: #9c9c9f;
+    --t: #a86b1a;
+    --f: #2b6cb0;
+    --n: #b85928;
+    --hi: rgba(0,0,0,0.03);
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: 'Geist', system-ui, sans-serif; }
+  deck-stage:not(:defined) { visibility: hidden; }
+
+  /* ---------- SLIDE BASE ---------- */
+  section {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Geist', system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* ---------- CHROME (top + bottom bars) ---------- */
+  .chrome-top, .chrome-bot {
+    position: absolute;
+    left: 0; right: 0;
+    height: 56px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 56px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .chrome-top { top: 0; border-bottom: 1px solid var(--hairline); }
+  .chrome-bot { bottom: 0; border-top: 1px solid var(--hairline); }
+  .chrome-top .ct-l, .chrome-bot .ct-l { justify-self: start; }
+  .chrome-top .ct-c, .chrome-bot .ct-c { justify-self: center; }
+  .chrome-top .ct-r, .chrome-bot .ct-r { justify-self: end; }
+
+  /* the [EFFECT] mark */
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+  .brand::before { content: "["; color: var(--accent); }
+  .brand::after  { content: "]"; color: var(--accent); }
+
+  .pageno b { color: var(--fg); font-weight: 500; }
+  .pageno .sep { color: var(--muted-2); padding: 0 4px; }
+
+  .slide-label {
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .chrome-bot .ct-c {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 720px;
+  }
+  .chrome-top .ct-c { white-space: nowrap; }
+  .slide-label::before {
+    content: "~ ";
+    color: var(--muted-2);
+  }
+
+  /* ---------- INNER CONTENT AREA ---------- */
+  .canvas {
+    position: absolute;
+    top: 56px; bottom: 56px; left: 0; right: 0;
+    padding: 72px 96px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* eyebrow label */
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 14px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  h1.title {
+    font-size: 96px;
+    font-weight: 500;
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0;
+    text-wrap: pretty;
+  }
+  h2.title {
+    font-size: 72px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    margin: 0;
+    text-wrap: pretty;
+  }
+  h3.title {
+    font-size: 56px;
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  /* ---------- TITLE SLIDE ---------- */
+  .s-title .canvas {
+    padding: 96px;
+    justify-content: space-between;
+  }
+  .s-title .t-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .s-title .t-meta .where { text-align: right; }
+  .s-title .t-meta .where b { color: var(--fg); font-weight: 500; display: block; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px; }
+  .s-title h1 { font-size: 132px; line-height: 0.98; letter-spacing: -0.03em; max-width: 1500px; }
+  .s-title .t-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 48px;
+  }
+  .s-title .t-by {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: 22px;
+    color: var(--fg);
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .s-title .t-by .lbl {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .s-title .t-by .name { font-weight: 500; white-space: nowrap; }
+  .s-title .t-by .handle { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 18px; }
+
+  /* prompt cursor accent on title slide */
+  .s-title h1::after {
+    content: "_";
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
+    margin-left: 16px;
+    animation: blink 1.4s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- AGENDA ---------- */
+  .s-agenda .canvas { display: grid; grid-template-columns: 1fr 1.4fr; gap: 96px; align-content: center; }
+  .s-agenda .l h2 { font-size: 88px; font-weight: 500; letter-spacing: -0.025em; margin: 0; line-height: 1.0; }
+  .s-agenda .l p  { color: var(--muted); margin-top: 24px; font-size: 20px; max-width: 460px; line-height: 1.5; }
+  .s-agenda ol { list-style: none; margin: 0; padding: 0; counter-reset: a; display: flex; flex-direction: column; }
+  .s-agenda ol li {
+    counter-increment: a;
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    align-items: center;
+    gap: 24px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 28px;
+    font-weight: 400;
+  }
+  .s-agenda ol li:first-child { border-top: 1px solid var(--hairline); }
+  .s-agenda ol li::before {
+    content: counter(a, decimal-leading-zero);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .s-agenda ol li .dur {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* ---------- SPEAKER ---------- */
+  .s-speaker .canvas { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 88px; align-items: center; padding: 72px 96px; }
+  .s-speaker .who h2 { font-size: 92px; font-weight: 500; line-height: 0.98; letter-spacing: -0.03em; margin: 0; }
+  .s-speaker .who .role { margin-top: 16px; font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .s-speaker .who ul { list-style: none; margin: 32px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-width: 720px; }
+  .s-speaker .who ul li { font-size: 20px; line-height: 1.5; display: grid; grid-template-columns: 24px 1fr; align-items: baseline; gap: 8px; color: var(--fg); }
+  .s-speaker .who ul li::before { content: "—"; color: var(--accent); }
+  .s-speaker .who .links { margin-top: 28px; display: flex; gap: 32px; font-family: 'JetBrains Mono', monospace; font-size: 15px; color: var(--muted); }
+  .s-speaker .who .links span b { color: var(--fg); font-weight: 500; margin-left: 8px; }
+  .s-speaker .portrait {
+    aspect-ratio: 4/5;
+    max-height: 820px;
+    align-self: center;
+    background: var(--panel);
+    border: 1px solid var(--hairline-2);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .s-speaker .portrait image-slot { width: 100%; height: 100%; display: block; }
+  .s-speaker .portrait .corner {
+    position: absolute;
+    top: 14px; left: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--panel);
+    padding: 4px 8px;
+    border: 1px solid var(--hairline-2);
+    border-radius: 3px;
+    z-index: 2;
+  }
+
+  /* ---------- SECTION DIVIDER ---------- */
+  .s-section .canvas { padding: 96px 96px 72px; align-content: end; justify-content: end; display: grid; }
+  .s-section .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+  }
+  .s-section h2 {
+    font-size: 168px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    margin: 16px 0 64px;
+    max-width: 1500px;
+    text-wrap: balance;
+  }
+  .s-section .rule {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 24px;
+    padding-top: 28px;
+    border-top: 1px solid var(--hairline);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- BIG STATEMENT ---------- */
+  .s-statement .canvas { justify-content: center; align-items: flex-start; padding: 96px 160px; }
+  .s-statement h2 {
+    font-size: 132px;
+    font-weight: 500;
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    margin: 0;
+    max-width: 1600px;
+    text-wrap: balance;
+  }
+  .s-statement h2 em { font-style: normal; color: var(--accent); }
+  .s-statement .sub {
+    margin-top: 36px;
+    font-size: 24px;
+    color: var(--muted);
+    max-width: 1100px;
+    line-height: 1.5;
+  }
+
+  /* ---------- QUOTE ---------- */
+  .s-quote .canvas { justify-content: center; padding: 96px 160px; }
+  .s-quote .open { font-family: 'JetBrains Mono', monospace; font-size: 96px; line-height: 1; color: var(--accent); margin-bottom: 16px; }
+  .s-quote blockquote {
+    font-size: 64px;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0;
+    max-width: 1500px;
+    text-wrap: pretty;
+  }
+  .s-quote .cite {
+    margin-top: 56px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .s-quote .cite .who { color: var(--fg); text-transform: uppercase; letter-spacing: 0.14em; }
+  .s-quote .cite .bar { width: 56px; height: 1px; background: var(--hairline-2); }
+
+  /* ---------- CONCEPT DIAGRAM (3 boxes) ---------- */
+  .s-concept .canvas { padding: 72px 96px; }
+  .s-concept .head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 56px; }
+  .s-concept h2 { font-size: 56px; font-weight: 500; letter-spacing: -0.02em; max-width: 900px; margin: 0; line-height: 1.05; }
+  .s-concept .head p { color: var(--muted); font-size: 18px; max-width: 460px; margin: 0; line-height: 1.5; }
+  .s-concept .grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .s-concept .cell {
+    border: 1px solid var(--hairline-2);
+    background: var(--panel);
+    border-radius: 6px;
+    padding: 36px 32px 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .s-concept .cell .ix {
+    position: absolute;
+    top: 18px; right: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+  }
+  .s-concept .cell .shape {
+    width: 100%;
+    flex: 1;
+    display: grid;
+    place-items: center;
+    min-height: 240px;
+  }
+  .s-concept .cell .shape svg { width: 180px; height: 180px; }
+  .s-concept .cell .shape svg [stroke] { stroke: var(--fg); }
+  .s-concept .cell h3 {
+    margin: 24px 0 8px;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+  .s-concept .cell p { color: var(--muted); font-size: 16px; line-height: 1.55; margin: 0; }
+
+  /* ---------- THREE-COL COMPARISON ---------- */
+  .s-compare .canvas { padding: 72px 96px; }
+  .s-compare h2 { font-size: 56px; font-weight: 500; letter-spacing: -0.02em; margin: 0 0 48px; max-width: 1200px; line-height: 1.05; }
+  .s-compare .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; flex: 1; }
+  .s-compare .col {
+    padding: 36px 36px 36px 0;
+    border-left: 1px solid var(--hairline);
+    padding-left: 32px;
+    display: flex;
+    flex-direction: column;
+  }
+  .s-compare .col:first-child { border-left: 0; padding-left: 0; }
+  .s-compare .col .num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); letter-spacing: 0.18em; margin-bottom: 28px; }
+  .s-compare .col h3 { font-size: 34px; font-weight: 500; letter-spacing: -0.015em; margin: 0 0 16px; line-height: 1.1; }
+  .s-compare .col p { color: var(--muted); font-size: 18px; line-height: 1.55; margin: 0 0 20px; }
+  .s-compare .col code {
+    margin-top: auto;
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    padding: 12px 14px;
+    color: var(--fg);
+    white-space: pre;
+    line-height: 1.6;
+  }
+
+  /* ---------- CODE BLOCK CORE ---------- */
+  .codeblock {
+    background: var(--panel);
+    border: 1px solid var(--hairline-2);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .codeblock .cbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hairline);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--panel-2);
+  }
+  .codeblock .cbar .file { color: var(--fg); }
+  .codeblock .cbar .file .ext { color: var(--muted); }
+  .codeblock .cbar .right { display: flex; gap: 14px; color: var(--muted); }
+  .codeblock pre {
+    margin: 0;
+    padding: 22px 0 22px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    line-height: 1.6;
+    overflow: hidden;
+    flex: 1;
+    counter-reset: ln;
+    color: var(--fg);
+  }
+  .codeblock pre .ln {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    padding-right: 24px;
+  }
+  .codeblock pre .ln::before {
+    counter-increment: ln;
+    content: counter(ln, decimal-leading-zero);
+    color: var(--muted-2);
+    text-align: right;
+    padding-right: 22px;
+    user-select: none;
+  }
+  .codeblock pre .ln.hl { background: var(--hi); }
+  .codeblock pre .ln.blank::before { content: ""; }
+  .codeblock pre .k { color: var(--k); }
+  .codeblock pre .s { color: var(--s); }
+  .codeblock pre .c { color: var(--c); font-style: italic; }
+  .codeblock pre .t { color: var(--t); }
+  .codeblock pre .f { color: var(--f); }
+  .codeblock pre .n { color: var(--n); }
+  .codeblock pre .p { color: var(--muted); }
+
+  /* ---------- CODE SLIDE (full) ---------- */
+  .s-code .canvas { padding: 56px 96px 56px; }
+  .s-code .head { display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: end; margin-bottom: 28px; }
+  .s-code .head h3 { font-size: 36px; font-weight: 500; letter-spacing: -0.015em; margin: 0; line-height: 1.15; min-width: 0; }
+  .s-code .head .note { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 0.06em; white-space: nowrap; }
+  .s-code .codeblock { flex: 1; }
+
+  /* ---------- CODE + COMMENTARY ---------- */
+  .s-codecom .canvas { padding: 72px 96px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 56px; align-items: stretch; }
+  .s-codecom .com h3 { font-size: 48px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.05; margin: 0 0 24px; }
+  .s-codecom .com p { color: var(--muted); font-size: 20px; line-height: 1.6; margin: 0 0 16px; max-width: 540px; }
+  .s-codecom .com .callout {
+    margin-top: 28px;
+    border-left: 2px solid var(--accent);
+    padding: 4px 0 4px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    color: var(--fg);
+    line-height: 1.55;
+  }
+  .s-codecom .com .callout .lbl { display: block; color: var(--accent); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+  .s-codecom .codeblock { height: 100%; }
+  .s-codecom .codeblock pre { font-size: 20px; }
+
+  /* ---------- STATS ---------- */
+  .s-stats .canvas { padding: 72px 96px; display: grid; grid-template-columns: 1fr 1.1fr; gap: 96px; align-items: center; }
+  .s-stats .l h2 { font-size: 64px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.05; margin: 0 0 24px; }
+  .s-stats .l p { color: var(--muted); font-size: 20px; line-height: 1.55; max-width: 520px; margin: 0; }
+  .s-stats .r { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .s-stats .stat {
+    border: 1px solid var(--hairline-2);
+    background: var(--panel);
+    border-radius: 6px;
+    padding: 32px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 240px;
+  }
+  .s-stats .stat .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .s-stats .stat .v {
+    font-size: 108px;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .s-stats .stat .v .pre { color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.5em; vertical-align: super; margin-right: 4px; }
+  .s-stats .stat .sub { color: var(--muted); font-size: 14px; font-family: 'JetBrains Mono', monospace; }
+  .s-stats .stat.dark { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .s-stats .stat.dark .lbl, .s-stats .stat.dark .sub { color: var(--bg); opacity: 0.65; }
+  .s-stats .stat.dark .v .pre { color: var(--accent); }
+
+  /* ---------- IMAGE FULL-BLEED ---------- */
+  .s-image .canvas { padding: 0; top: 56px; bottom: 56px; }
+  .s-image image-slot { display: block; width: 100%; height: 100%; }
+  .s-image .caption {
+    position: absolute;
+    bottom: 32px; left: 56px; right: 56px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.08em;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+    z-index: 2;
+  }
+  .s-image .caption b { color: #fff; font-weight: 500; }
+
+  /* ---------- RESOURCES ---------- */
+  .s-resources .canvas { padding: 72px 96px; }
+  .s-resources h2 { font-size: 80px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.0; margin: 0 0 56px; }
+  .s-resources .list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 96px; }
+  .s-resources .item {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 0;
+    border-top: 1px solid var(--hairline);
+    font-size: 22px;
+  }
+  .s-resources .item:last-child, .s-resources .item:nth-last-child(2) { border-bottom: 1px solid var(--hairline); }
+  .s-resources .item .ix { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.14em; }
+  .s-resources .item .url { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 16px; }
+  .s-resources .item .desc { color: var(--muted); font-size: 14px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
+  .s-resources .item .ti { font-weight: 500; }
+
+  /* ---------- THANK YOU ---------- */
+  .s-thanks .canvas { padding: 96px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 96px; align-items: center; }
+  .s-thanks h2 { font-size: 168px; font-weight: 500; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .s-thanks h2 em { font-style: normal; color: var(--accent); }
+  .s-thanks .info { display: flex; flex-direction: column; gap: 28px; }
+  .s-thanks .info .me { font-size: 36px; font-weight: 500; letter-spacing: -0.015em; }
+  .s-thanks .info .me .role { display: block; font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 8px; font-weight: 400; }
+  .s-thanks .links { border-top: 1px solid var(--hairline); padding-top: 28px; display: flex; flex-direction: column; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 18px; }
+  .s-thanks .links .row { display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: baseline; }
+  .s-thanks .links .row .lbl { color: var(--muted); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .s-thanks .links .row .val { color: var(--fg); }
+  .s-thanks .links .row .val .at { color: var(--accent); }
+
+  /* print: deck-stage handles per-page sizing */
+  @media print {
+    .codeblock pre .ln.hl { background: rgba(0,0,0,0.04); }
+  }
+</style>
+</head>
+<body>
+<deck-stage width="1920" height="1080">
+
+  <!-- ============ 1. TITLE ============ -->
+  <section class="s-title" data-label="Title">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">talk</div>
+      <div class="ct-r mono pageno"><b>01</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="t-meta">
+        <span>~ presentation/title.md</span>
+        <span class="where"><b data-tt="talk-loc">AMSTERDAM</b><span data-tt="talk-date">16 MAY 2026</span></span>
+      </div>
+
+      <h1 class="title" data-tt="talk-title">Here goes the title of your presentation</h1>
+
+      <div class="t-foot">
+        <div class="t-by">
+          <span class="lbl">SPEAKER</span>
+          <span class="name" data-tt="speaker-name">Johnathan Smith</span>
+          <span class="handle" data-tt="speaker-handle">@jsmith</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 2. AGENDA ============ -->
+  <section class="s-agenda" data-label="Agenda">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">In this talk</div>
+      <div class="ct-r mono pageno"><b>02</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="l">
+        <div class="eyebrow"><span class="dot"></span>AGENDA</div>
+        <h2>In this talk</h2>
+        <p>A whirlwind tour of how Effect models computation as values — what we'll see, in what order, and why.</p>
+      </div>
+      <ol>
+        <li><span>Why Effect exists</span><span class="dur">08 MIN</span></li>
+        <li><span>The Effect data type</span><span class="dur">12 MIN</span></li>
+        <li><span>Composing real-world programs</span><span class="dur">15 MIN</span></li>
+        <li><span>Errors, retries, interruption</span><span class="dur">10 MIN</span></li>
+        <li><span>Where to go next</span><span class="dur">05 MIN</span></li>
+      </ol>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 3. SPEAKER ============ -->
+  <section class="s-speaker" data-label="Speaker">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">whoami</div>
+      <div class="ct-r mono pageno"><b>03</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="who">
+        <div class="eyebrow"><span class="dot"></span>SPEAKER</div>
+        <h2 data-tt="speaker-name">Johnathan Smith</h2>
+        <div class="role">Staff Engineer · Acme Co.</div>
+        <ul>
+          <li>Working with Effect in production since 2023.</li>
+          <li>Maintains a small open-source helpers library.</li>
+          <li>Previously: distributed systems, payments infrastructure.</li>
+        </ul>
+        <div class="links">
+          <span>X<b data-tt="speaker-handle">@jsmith</b></span>
+          <span>GH<b data-tt="speaker-handle-bare">jsmith</b></span>
+        </div>
+      </div>
+      <div class="portrait">
+        <span class="corner">portrait.jpg</span>
+        <image-slot id="speaker-portrait" placeholder="Drop a speaker portrait" shape="rect"></image-slot>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 4. SECTION DIVIDER ============ -->
+  <section class="s-section" data-label="Section">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">part 01</div>
+      <div class="ct-r mono pageno"><b>04</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div>
+        <div class="num">PART · 01 ──</div>
+        <h2>Why Effect <em style="color:var(--accent);font-style:normal">exists</em></h2>
+        <div class="rule">
+          <span>The problem with async, errors, and dependencies — taken seriously.</span>
+          <span>3 sub-sections</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 5. BIG STATEMENT ============ -->
+  <section class="s-statement" data-label="Statement">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">key idea</div>
+      <div class="ct-r mono pageno"><b>05</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="eyebrow"><span class="dot"></span>THE KEY IDEA</div>
+      <h2>An effect is a <em>description</em><br>of a computation —<br>not the computation itself.</h2>
+      <p class="sub">Build programs as values. Compose them with confidence. Run them only at the edge of your application.</p>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 6. QUOTE ============ -->
+  <section class="s-quote" data-label="Quote">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">field report</div>
+      <div class="ct-r mono pageno"><b>06</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="open">"</div>
+      <blockquote>Everything feels so very thoughtful, for real production needs. I'm feeling it right now in my work as I use Effect more and more, and just wanted to say thank you for all the efforts put in.</blockquote>
+      <div class="cite"><span class="bar"></span><span class="who">Discord member</span><span>· EFFECT COMMUNITY</span></div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 7. CONCEPT (3 boxes) ============ -->
+  <section class="s-concept" data-label="Concept">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">three pillars</div>
+      <div class="ct-r mono pageno"><b>07</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="head">
+        <h2>Three pillars of an Effect program.</h2>
+        <p>Every effect is parameterised by three type variables — together they describe everything the runtime needs to know.</p>
+      </div>
+      <div class="grid">
+        <div class="cell">
+          <span class="ix">A · SUCCESS</span>
+          <div class="shape">
+            <svg viewBox="0 0 200 200" fill="none" stroke-width="3">
+              <polygon points="100,20 180,170 20,170" stroke="currentColor" />
+            </svg>
+          </div>
+          <h3>Async, concurrency, &amp; resource management</h3>
+          <p>The value an effect produces if it succeeds. Everything from a parsed JSON to a HTTP response.</p>
+        </div>
+        <div class="cell">
+          <span class="ix">E · FAILURE</span>
+          <div class="shape">
+            <svg viewBox="0 0 200 200" fill="none" stroke-width="3">
+              <circle cx="100" cy="100" r="78" stroke="currentColor" />
+            </svg>
+          </div>
+          <h3>Start by refactoring small parts of your app</h3>
+          <p>Typed errors. The compiler tracks every failure channel — no surprises at runtime.</p>
+        </div>
+        <div class="cell">
+          <span class="ix">R · REQUIREMENTS</span>
+          <div class="shape">
+            <svg viewBox="0 0 200 200" fill="none" stroke-width="3">
+              <rect x="22" y="22" width="156" height="156" stroke="currentColor" />
+            </svg>
+          </div>
+          <h3>Integrates seamlessly with OpenTelemetry</h3>
+          <p>Dependencies the effect needs to run — provided once, at the edge of your program.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 8. THREE-COL COMPARISON ============ -->
+  <section class="s-compare" data-label="Compare">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">building blocks</div>
+      <div class="ct-r mono pageno"><b>08</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <h2>Powerful building blocks.</h2>
+      <div class="cols">
+        <div class="col">
+          <div class="num">01</div>
+          <h3>Powerful building blocks</h3>
+          <p>An ecosystem designed to be composed. Generators, layers, schedules, and streams all interlock.</p>
+          <code>Effect.gen(function* () {<br>  yield* …<br>})</code>
+        </div>
+        <div class="col">
+          <div class="num">02</div>
+          <h3>Easy to refactor</h3>
+          <p>As your application grows, the typed errors and dependencies grow with it — no silent regressions.</p>
+          <code>Effect&lt;A, E, R&gt;</code>
+        </div>
+        <div class="col">
+          <div class="num">03</div>
+          <h3>Never try / catch again</h3>
+          <p>Handle errors with the same expressiveness as success. Recover, retry, fall back, abort — explicitly.</p>
+          <code>Effect.catchTags({<br>  NotFound: …<br>})</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 9. CODE (full) ============ -->
+  <section class="s-code" data-label="Code">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">example.ts</div>
+      <div class="ct-r mono pageno"><b>09</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="head">
+        <h3>A program, described as a value.</h3>
+        <span class="note">// run me with: bun run program.ts</span>
+      </div>
+
+      <div class="codeblock">
+        <div class="cbar">
+          <span class="file">program<span class="ext">.ts</span></span>
+          <span class="right"><span>TS</span><span>32 LOC</span><span>UTF-8</span></span>
+        </div>
+        <pre><span class="ln"><span><span class="k">import</span> <span class="p">{</span> Effect<span class="p">,</span> Console <span class="p">}</span> <span class="k">from</span> <span class="s">"effect"</span></span></span><span class="ln blank"><span></span></span><span class="ln"><span><span class="k">const</span> <span class="f">getUser</span> <span class="p">=</span> <span class="p">(</span>id<span class="p">:</span> <span class="t">number</span><span class="p">)</span> <span class="p">=&gt;</span></span></span><span class="ln"><span>  Effect.<span class="f">gen</span><span class="p">(</span><span class="k">function*</span> <span class="p">()</span> <span class="p">{</span></span></span><span class="ln"><span>    <span class="k">yield*</span> Console.<span class="f">log</span><span class="p">(</span><span class="s">`Fetching user ${id}`</span><span class="p">)</span></span></span><span class="ln"><span>    <span class="k">return</span> <span class="p">{</span> id<span class="p">,</span> <span class="f">name</span><span class="p">:</span> <span class="s">"Ada"</span> <span class="p">}</span></span></span><span class="ln"><span>  <span class="p">})</span></span></span><span class="ln blank"><span></span></span><span class="ln hl"><span><span class="k">const</span> program <span class="p">=</span> Effect.<span class="f">gen</span><span class="p">(</span><span class="k">function*</span> <span class="p">()</span> <span class="p">{</span></span></span><span class="ln hl"><span>  <span class="k">const</span> user <span class="p">=</span> <span class="k">yield*</span> <span class="f">getUser</span><span class="p">(</span><span class="n">42</span><span class="p">)</span></span></span><span class="ln hl"><span>  <span class="k">yield*</span> Console.<span class="f">log</span><span class="p">(</span><span class="s">`Hello, ${user.name}`</span><span class="p">)</span></span></span><span class="ln hl"><span><span class="p">})</span></span></span><span class="ln blank"><span></span></span><span class="ln"><span>Effect.<span class="f">runPromise</span><span class="p">(</span>program<span class="p">)</span></span></span></pre>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 10. CODE + COMMENTARY ============ -->
+  <section class="s-codecom" data-label="Code + commentary">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">errors as values</div>
+      <div class="ct-r mono pageno"><b>10</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="com">
+        <div class="eyebrow"><span class="dot"></span>ERRORS</div>
+        <h3>Recovery, retry, fall-back — all explicit.</h3>
+        <p>Effect tracks every failure type in the <span class="mono">E</span> channel. The compiler will not let you forget about <span class="mono">NotFound</span>.</p>
+        <p>And because the error path is just another value, you compose it the same way you compose success.</p>
+        <div class="callout">
+          <span class="lbl">Note</span>
+          <span class="mono">catchTags</span> exhaustively matches the discriminated <span class="mono">_tag</span> field.
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="cbar">
+          <span class="file">users<span class="ext">.ts</span></span>
+          <span class="right"><span>TS</span><span>14 LOC</span></span>
+        </div>
+        <pre><span class="ln"><span><span class="k">const</span> safe <span class="p">=</span> program.<span class="f">pipe</span><span class="p">(</span></span></span><span class="ln hl"><span>  Effect.<span class="f">catchTags</span><span class="p">({</span></span></span><span class="ln hl"><span>    <span class="t">NotFound</span><span class="p">:</span> <span class="p">()</span> <span class="p">=&gt;</span></span></span><span class="ln hl"><span>      Console.<span class="f">log</span><span class="p">(</span><span class="s">"user not found"</span><span class="p">),</span></span></span><span class="ln hl"><span>    <span class="t">DbError</span><span class="p">:</span>   <span class="p">(</span>e<span class="p">)</span> <span class="p">=&gt;</span></span></span><span class="ln hl"><span>      Effect.<span class="f">fail</span><span class="p">(</span><span class="k">new</span> <span class="t">UserFault</span><span class="p">(</span>e<span class="p">))</span></span></span><span class="ln hl"><span>  <span class="p">}),</span></span></span><span class="ln"><span>  Effect.<span class="f">retry</span><span class="p">(</span>Schedule.<span class="f">exponential</span><span class="p">(</span><span class="s">"100 millis"</span><span class="p">)),</span></span></span><span class="ln"><span>  Effect.<span class="f">timeout</span><span class="p">(</span><span class="s">"3 seconds"</span><span class="p">),</span></span></span><span class="ln"><span><span class="p">)</span></span></span></pre>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 11. STATS ============ -->
+  <section class="s-stats" data-label="Stats">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">by the numbers</div>
+      <div class="ct-r mono pageno"><b>11</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div class="l">
+        <div class="eyebrow"><span class="dot"></span>BY THE NUMBERS</div>
+        <h2>Effect is a powerful TypeScript library —<br>and a growing community.</h2>
+        <p>Adopted by teams shipping payments, billing, scheduling, and AI tooling in production.</p>
+      </div>
+      <div class="r">
+        <div class="stat">
+          <span class="lbl">NPM · MONTHLY</span>
+          <div class="v"><span class="pre">+</span>2.3<span style="font-size:0.55em;letter-spacing:-0.02em">M</span></div>
+          <span class="sub">// downloads · last 30d</span>
+        </div>
+        <div class="stat dark">
+          <span class="lbl">GITHUB · STARS</span>
+          <div class="v"><span class="pre">+</span>11<span style="font-size:0.55em;letter-spacing:-0.02em">K</span></div>
+          <span class="sub">// effect-ts / effect</span>
+        </div>
+        <div class="stat dark">
+          <span class="lbl">DISCORD · MEMBERS</span>
+          <div class="v"><span class="pre">+</span>8<span style="font-size:0.55em;letter-spacing:-0.02em">K</span></div>
+          <span class="sub">// active community</span>
+        </div>
+        <div class="stat">
+          <span class="lbl">CONTRIBUTORS</span>
+          <div class="v"><span class="pre">+</span>340</div>
+          <span class="sub">// across core repos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 12. IMAGE FULL-BLEED ============ -->
+  <section class="s-image" data-label="Image">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">in the wild</div>
+      <div class="ct-r mono pageno"><b>12</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <image-slot id="image-fullbleed" placeholder="Drop a full-bleed photo or screenshot" shape="rect"></image-slot>
+    </div>
+
+    <div class="caption">
+      <span>~ FIG. 01 · <b>A workstation, somewhere on the network.</b></span>
+      <span>SOURCE / unsplash</span>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 13. RESOURCES ============ -->
+  <section class="s-resources" data-label="Resources">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">where to go next</div>
+      <div class="ct-r mono pageno"><b>13</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <h2>Where to go<br>next.</h2>
+      <div class="list">
+        <div class="item">
+          <span class="ix">01</span>
+          <div>
+            <div class="ti">Docs &amp; getting started</div>
+            <div class="url">effect.website</div>
+          </div>
+          <span class="desc">START HERE</span>
+        </div>
+        <div class="item">
+          <span class="ix">02</span>
+          <div>
+            <div class="ti">Source on GitHub</div>
+            <div class="url">github.com/Effect-TS/effect</div>
+          </div>
+          <span class="desc">SOURCE</span>
+        </div>
+        <div class="item">
+          <span class="ix">03</span>
+          <div>
+            <div class="ti">Effect Days · talks</div>
+            <div class="url">youtube.com/@effect-ts</div>
+          </div>
+          <span class="desc">VIDEOS</span>
+        </div>
+        <div class="item">
+          <span class="ix">04</span>
+          <div>
+            <div class="ti">Community Discord</div>
+            <div class="url">effect.website/discord</div>
+          </div>
+          <span class="desc">CHAT</span>
+        </div>
+        <div class="item">
+          <span class="ix">05</span>
+          <div>
+            <div class="ti">Slides &amp; demo code</div>
+            <div class="url" data-tt="speaker-handle-bare">jsmith</div>
+          </div>
+          <span class="desc">REPO</span>
+        </div>
+        <div class="item">
+          <span class="ix">06</span>
+          <div>
+            <div class="ti">Follow along</div>
+            <div class="url" data-tt="speaker-handle">@jsmith</div>
+          </div>
+          <span class="desc">SOCIAL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ 14. THANK YOU / Q&A ============ -->
+  <section class="s-thanks" data-label="Thank you">
+    <div class="chrome-top">
+      <div class="ct-l"><span class="brand">EFFECT</span></div>
+      <div class="ct-c slide-label">end of talk · questions?</div>
+      <div class="ct-r mono pageno"><b>14</b><span class="sep">/</span>14</div>
+    </div>
+
+    <div class="canvas">
+      <div>
+        <div class="eyebrow"><span class="dot"></span>END · Q&amp;A</div>
+        <h2>Thank<br>you<em>.</em></h2>
+      </div>
+      <div class="info">
+        <div class="me">
+          <span data-tt="speaker-name">Johnathan Smith</span>
+          <span class="role">Staff Engineer · Acme Co.</span>
+        </div>
+        <div class="links">
+          <div class="row"><span class="lbl">X</span><span class="val"><span class="at" data-tt="speaker-handle">@jsmith</span></span></div>
+          <div class="row"><span class="lbl">GitHub</span><span class="val" data-tt="speaker-handle-bare">jsmith</span></div>
+          <div class="row"><span class="lbl">Web</span><span class="val">jsmith.dev</span></div>
+          <div class="row"><span class="lbl">Slides</span><span class="val">jsmith.dev/talks</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot">
+      <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-r mono">effect · 2026</div>
+    </div>
+  </section>
+
+</deck-stage>
+
+<script>
+  window.__TWEAKS = /*EDITMODE-BEGIN*/{
+    "theme": "dark",
+    "talkTitle": "Here goes the title of your presentation",
+    "speakerName": "Johnathan Smith",
+    "speakerHandle": "@jsmith",
+    "talkLoc": "AMSTERDAM",
+    "talkDate": "16 MAY 2026"
+  }/*EDITMODE-END*/;
+</script>
+<script src="deck-stage.js"></script>
+<script src="image-slot.js"></script>
+<script src="tweaks.js"></script>
+</body>
+</html>

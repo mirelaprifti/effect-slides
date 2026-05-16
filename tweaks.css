@@ -1,0 +1,93 @@
+/* Tweaks panel — minimalist console-style, shared across both decks. */
+#tweaks-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 320px;
+  background: #15151a;
+  color: #e8e8ea;
+  border: 1px solid #2a2a31;
+  border-radius: 10px;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 13px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  z-index: 99999;
+  display: none;
+  overflow: hidden;
+}
+#tweaks-panel.on { display: block; }
+
+.tp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #2a2a31;
+}
+.tp-title {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8b8c0;
+}
+.tp-close {
+  background: transparent;
+  border: 0;
+  color: #8b8b95;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.tp-close:hover { color: #fff; }
+.tp-body { padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+.tp-row { display: flex; flex-direction: column; gap: 6px; }
+.tp-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tp-row-2 > div { display: flex; flex-direction: column; gap: 6px; }
+.tp-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8b8b95;
+}
+#tweaks-panel input[type="text"],
+#tweaks-panel textarea {
+  background: #0a0a0c;
+  border: 1px solid #2a2a31;
+  color: #e8e8ea;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+}
+#tweaks-panel input[type="text"]:focus,
+#tweaks-panel textarea:focus {
+  border-color: #4a4a55;
+}
+.tp-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #0a0a0c;
+  border: 1px solid #2a2a31;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+.tp-seg button {
+  background: transparent;
+  border: 0;
+  color: #b8b8c0;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.tp-seg button.on {
+  background: #2a2a31;
+  color: #fff;
+}
