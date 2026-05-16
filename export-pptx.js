@@ -1,12 +1,12 @@
 /* Native PPTX exporter — generates an editable .pptx from the slide DOM.
  *
- * Uses PptxGenJS loaded on demand from CDN. Each <section> in <deck-stage>
- * becomes one PPTX slide. Layout is 13.333 x 7.5 in (matching 1920x1080 at
- * 144 DPI, so 1 design px = 1/144 in).
+ * Uses PptxGenJS loaded on demand from CDN. One PPTX slide per <section> in
+ * <deck-stage>. Layout is the predefined widescreen 13.333 × 7.5 in (16:9),
+ * matching 1920×1080 at 144 DPI ⇒ 1 design px = 1/144 in.
  *
- * Slide builders are dispatched by the section's class (s-title, s-agenda,
- * s-speaker, ...). Anything without a dedicated builder falls back to a
- * generic eyebrow + heading + body layout.
+ * Conservative output: plain text only (no rich runs), no custom shapes,
+ * named hex colors, guards on every addText so empty strings are skipped.
+ * Keeps Keynote happy.
  */
 (function () {
   const PPTXGEN_URL = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
@@ -24,284 +24,244 @@
     return pptxgenPromise;
   }
 
-  // 1920x1080 design @ 144 DPI ⇒ 13.333 x 7.5 in.
-  const px = (n) => +(n / 144).toFixed(3);
+  // 1920×1080 design @ 144 DPI ⇒ 13.333 × 7.5 in.
+  const px = (n) => +(Math.max(0, n) / 144).toFixed(3);
 
-  function cssVar(name) {
-    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return v.startsWith('#') ? v.slice(1) : v;
+  function readHex(name, fallback) {
+    let v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (v.startsWith('#')) v = v.slice(1);
+    return /^[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : fallback;
   }
 
-  function text(el, sel) {
+  function colors() {
+    const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+    return {
+      bg: readHex('--bg', isDark ? '0A0A0B' : 'F7F7F5'),
+      fg: readHex('--fg', isDark ? 'EDEDF0' : '14141A'),
+      muted: readHex('--muted', '7A7A82'),
+      accent: readHex('--accent', '00D492'),
+    };
+  }
+
+  function pickText(el, sel) {
     if (!el) return '';
     const n = el.querySelector(sel);
     return n ? n.textContent.trim().replace(/\s+/g, ' ') : '';
   }
-
-  function all(el, sel) {
+  function pickHTMLText(el) {
+    if (!el) return '';
+    // Flatten an element's text, replacing <br> with newlines.
+    return Array.from(el.childNodes).map(n => {
+      if (n.nodeType === 3) return n.textContent;
+      if (n.tagName === 'BR') return '\n';
+      return n.textContent || '';
+    }).join('').trim().replace(/[ \t]+/g, ' ');
+  }
+  function pickAll(el, sel) {
     return el ? Array.from(el.querySelectorAll(sel)) : [];
   }
 
-  function colors() {
-    return {
-      bg: cssVar('--bg') || '0a0a0b',
-      fg: cssVar('--fg') || 'ededf0',
-      muted: cssVar('--muted') || '7a7a82',
-      accent: cssVar('--accent') || '00D492',
-    };
-  }
-
-  function bgFor(slide, c) {
-    slide.background = { color: c.bg };
-  }
-
-  function addText(slide, str, opts) {
-    if (!str) return;
-    slide.addText(str, Object.assign({
+  function add(slide, str, opts) {
+    if (str == null) return;
+    const s = String(str).trim();
+    if (!s) return;
+    slide.addText(s, Object.assign({
       fontFace: 'Geist',
-      color: opts.color || colors().fg,
       valign: 'top',
       margin: 0,
+      isTextBox: true,
     }, opts));
   }
 
-  function addEyebrow(slide, section, c) {
-    const eb = text(section, '.eyebrow');
+  function bg(slide, c) {
+    slide.background = { color: c.bg };
+  }
+
+  function eyebrow(slide, section, c) {
+    const eb = pickText(section, '.eyebrow');
     if (!eb) return;
-    addText(slide, eb, {
-      x: px(112), y: px(110), w: px(800), h: px(36),
-      fontSize: 14, fontFace: 'JetBrains Mono', bold: true,
-      color: c.fg, charSpacing: 5,
+    add(slide, eb, {
+      x: px(112), y: px(110), w: px(900), h: px(36),
+      fontSize: 14, fontFace: 'Courier New', bold: true, color: c.fg,
     });
   }
 
-  function addChrome(slide, section, c, pageNo, total) {
-    const label = section.dataset.label || '';
-    // Top-left: Effect mark (text-only since we can't inline SVG mark here)
-    addText(slide, 'Effect', {
-      x: px(48), y: px(28), w: px(200), h: px(24),
-      fontSize: 11, fontFace: 'Geist', bold: true, color: c.fg, charSpacing: 4,
+  function chrome(slide, section, c, n, total) {
+    add(slide, 'EFFECT', {
+      x: px(48), y: px(28), w: px(220), h: px(24),
+      fontSize: 11, fontFace: 'Courier New', bold: true, color: c.fg,
     });
-    // Top-center: slide label
-    if (label) {
-      addText(slide, label.toUpperCase(), {
-        x: px(760), y: px(28), w: px(400), h: px(24),
-        fontSize: 11, fontFace: 'JetBrains Mono', color: c.muted,
-        align: 'center', charSpacing: 4,
-      });
-    }
-    // Top-right: page number
-    addText(slide, `${String(pageNo).padStart(2, '0')} / ${String(total).padStart(2, '0')}`, {
-      x: px(1672), y: px(28), w: px(200), h: px(24),
-      fontSize: 11, fontFace: 'JetBrains Mono', color: c.muted, align: 'right',
+    const label = (section.dataset.label || '').toUpperCase();
+    if (label) add(slide, label, {
+      x: px(760), y: px(28), w: px(400), h: px(24),
+      fontSize: 11, fontFace: 'Courier New', color: c.muted, align: 'center',
     });
-    // Bottom-right: Effect 2026
-    addText(slide, 'Effect 2026', {
-      x: px(1572), y: px(1032), w: px(300), h: px(20),
-      fontSize: 11, fontFace: 'JetBrains Mono', color: c.muted, align: 'right',
+    add(slide, `${String(n).padStart(2, '0')} / ${String(total).padStart(2, '0')}`, {
+      x: px(1648), y: px(28), w: px(220), h: px(24),
+      fontSize: 11, fontFace: 'Courier New', color: c.muted, align: 'right',
+    });
+    add(slide, 'Effect — 2026', {
+      x: px(1500), y: px(1032), w: px(372), h: px(20),
+      fontSize: 11, fontFace: 'Courier New', color: c.muted, align: 'right',
     });
   }
 
   function buildTitle(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-
-    const title = text(section, 'h1.title') || text(section, 'h1');
-    const speakerName = text(section, '.t-by .name');
-    const speakerHandle = text(section, '.t-by .handle');
-    const loc = text(section, '.t-meta .where b');
-    const dateEl = section.querySelector('.t-meta .where [data-tt="talk-date"]');
+    bg(slide, c);
+    const title = pickText(section, 'h1.title') || pickText(section, 'h1');
+    const speakerName = pickText(section, '.t-by .name');
+    const speakerHandle = pickText(section, '.t-by .handle');
+    const loc = pickText(section, '.t-meta .where b');
+    const dateEl = section.querySelector('.t-meta [data-tt="talk-date"]');
     const date = dateEl ? dateEl.textContent.trim() : '';
-    const meta = text(section, '.t-meta > span:first-child');
 
-    addText(slide, meta || '~ presentation/title.md', {
-      x: px(112), y: px(112), w: px(1000), h: px(28),
-      fontSize: 13, fontFace: 'JetBrains Mono', color: c.muted,
+    add(slide, '~ presentation/title.md', {
+      x: px(112), y: px(112), w: px(900), h: px(28),
+      fontSize: 13, fontFace: 'Courier New', color: c.muted,
     });
-    addText(slide, [loc, date].filter(Boolean).join('   '), {
-      x: px(1100), y: px(112), w: px(708), h: px(28),
-      fontSize: 13, fontFace: 'JetBrains Mono', color: c.muted, align: 'right', bold: true,
+    const where = [loc, date].filter(Boolean).join('   ');
+    if (where) add(slide, where, {
+      x: px(1000), y: px(112), w: px(808), h: px(28),
+      fontSize: 13, fontFace: 'Courier New', color: c.muted, align: 'right', bold: true,
     });
-
-    addText(slide, title, {
-      x: px(112), y: px(360), w: px(1696), h: px(360),
-      fontSize: 76, fontFace: 'Geist', bold: true, color: c.fg,
+    add(slide, title || 'Talk title', {
+      x: px(112), y: px(360), w: px(1696), h: px(420),
+      fontSize: 72, fontFace: 'Geist', bold: true, color: c.fg,
     });
-
-    addText(slide, 'SPEAKER', {
-      x: px(112), y: px(840), w: px(200), h: px(24),
-      fontSize: 12, fontFace: 'JetBrains Mono', color: c.muted, charSpacing: 5,
+    add(slide, 'SPEAKER', {
+      x: px(112), y: px(840), w: px(300), h: px(24),
+      fontSize: 12, fontFace: 'Courier New', color: c.muted,
     });
-    addText(slide, speakerName, {
-      x: px(112), y: px(870), w: px(800), h: px(40),
+    add(slide, speakerName, {
+      x: px(112), y: px(872), w: px(900), h: px(44),
       fontSize: 24, fontFace: 'Geist', bold: true, color: c.fg,
     });
-    addText(slide, speakerHandle, {
-      x: px(112), y: px(914), w: px(800), h: px(28),
-      fontSize: 14, fontFace: 'JetBrains Mono', color: c.muted,
+    add(slide, speakerHandle, {
+      x: px(112), y: px(918), w: px(900), h: px(28),
+      fontSize: 14, fontFace: 'Courier New', color: c.muted,
     });
-
     return slide;
   }
 
   function buildAgenda(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    addEyebrow(slide, section, c);
-    const heading = text(section, 'h2');
-    const lede = text(section, 'p');
-    addText(slide, heading, {
+    bg(slide, c);
+    eyebrow(slide, section, c);
+    add(slide, pickText(section, 'h2'), {
       x: px(112), y: px(180), w: px(820), h: px(180),
-      fontSize: 64, fontFace: 'Geist', bold: true, color: c.fg,
+      fontSize: 60, fontFace: 'Geist', bold: true, color: c.fg,
     });
-    if (lede) addText(slide, lede, {
+    add(slide, pickText(section, 'p'), {
       x: px(112), y: px(380), w: px(820), h: px(200),
       fontSize: 18, fontFace: 'Geist', color: c.muted,
     });
-    const items = all(section, 'ol > li').map((li, i) => ({
-      n: String(i + 1).padStart(2, '0'),
-      label: text(li, 'span:not(.dur)'),
-      dur: text(li, '.dur'),
-    }));
-    const rows = items.map(it => [
-      { text: `${it.n}`, options: { fontFace: 'JetBrains Mono', color: c.muted, bold: true } },
-      { text: `   ${it.label}`, options: { fontFace: 'Geist', color: c.fg, bold: true } },
-      { text: it.dur ? `   ${it.dur}` : '', options: { fontFace: 'JetBrains Mono', color: c.muted } },
-    ]);
-    rows.forEach((row, i) => {
-      slide.addText(row, {
-        x: px(980), y: px(180 + i * 60), w: px(828), h: px(48),
-        fontSize: 18, valign: 'top',
-      });
+    const items = pickAll(section, 'ol > li').map((li, i) => {
+      const label = pickText(li, 'span:not(.dur)') || li.textContent.trim();
+      const dur = pickText(li, '.dur');
+      return `${String(i + 1).padStart(2, '0')}   ${label}${dur ? '   ' + dur : ''}`;
+    });
+    if (items.length) add(slide, items.join('\n'), {
+      x: px(980), y: px(180), w: px(828), h: px(800),
+      fontSize: 20, fontFace: 'Geist', color: c.fg, paraSpaceAfter: 8,
     });
     return slide;
   }
 
   function buildSpeaker(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    addEyebrow(slide, section, c);
-    const name = text(section, 'h2');
-    const role = text(section, '.who .role');
-    const bio = text(section, '.who p');
-    const items = all(section, '.who ul li').map(li => li.textContent.trim());
-
-    addText(slide, name, {
-      x: px(112), y: px(180), w: px(1100), h: px(160),
-      fontSize: 60, fontFace: 'Geist', bold: true, color: c.fg,
+    bg(slide, c);
+    eyebrow(slide, section, c);
+    add(slide, pickText(section, 'h2'), {
+      x: px(112), y: px(180), w: px(1696), h: px(140),
+      fontSize: 56, fontFace: 'Geist', bold: true, color: c.fg,
     });
-    if (role) addText(slide, role, {
-      x: px(112), y: px(340), w: px(1100), h: px(40),
+    add(slide, pickText(section, '.who .role'), {
+      x: px(112), y: px(340), w: px(1696), h: px(40),
       fontSize: 20, fontFace: 'Geist', color: c.muted,
     });
-    if (bio) addText(slide, bio, {
-      x: px(112), y: px(420), w: px(1100), h: px(160),
+    add(slide, pickText(section, '.who p'), {
+      x: px(112), y: px(400), w: px(1100), h: px(200),
       fontSize: 18, fontFace: 'Geist', color: c.muted,
     });
-    if (items.length) {
-      slide.addText(items.map(t => ({ text: `— ${t}`, options: { breakLine: true } })), {
-        x: px(112), y: px(620), w: px(1100), h: px(280),
-        fontSize: 18, fontFace: 'Geist', color: c.fg, valign: 'top',
-      });
-    }
+    const items = pickAll(section, '.who ul li').map(li => `— ${li.textContent.trim()}`);
+    if (items.length) add(slide, items.join('\n'), {
+      x: px(112), y: px(640), w: px(1100), h: px(320),
+      fontSize: 18, fontFace: 'Geist', color: c.fg, paraSpaceAfter: 6,
+    });
     return slide;
   }
 
   function buildStatement(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    addEyebrow(slide, section, c);
-    const heading = section.querySelector('h2');
-    if (heading) {
-      // Preserve <em> as accent color via rich text runs.
-      const runs = [];
-      heading.childNodes.forEach(n => {
-        if (n.nodeType === 3) {
-          runs.push({ text: n.textContent, options: { color: c.fg } });
-        } else if (n.tagName === 'BR') {
-          runs.push({ text: '\n', options: { breakLine: true } });
-        } else if (n.tagName && n.tagName.toLowerCase() === 'em') {
-          runs.push({ text: n.textContent, options: { color: c.accent } });
-        } else {
-          runs.push({ text: n.textContent, options: { color: c.fg } });
-        }
-      });
-      slide.addText(runs, {
-        x: px(112), y: px(280), w: px(1696), h: px(560),
-        fontSize: 80, fontFace: 'Geist', bold: true,
-        valign: 'middle',
-      });
-    }
+    bg(slide, c);
+    eyebrow(slide, section, c);
+    const txt = pickHTMLText(section.querySelector('h2'));
+    add(slide, txt, {
+      x: px(112), y: px(280), w: px(1696), h: px(560),
+      fontSize: 72, fontFace: 'Geist', bold: true, color: c.fg, valign: 'middle',
+    });
     return slide;
   }
 
   function buildQuote(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    const open = text(section, '.open') || '"';
-    const quote = text(section, 'blockquote') || text(section, '.q');
-    const cite = text(section, 'cite') || text(section, '.cite');
-    addText(slide, open, {
-      x: px(112), y: px(220), w: px(200), h: px(120),
-      fontSize: 96, fontFace: 'JetBrains Mono', bold: true, color: c.accent,
+    bg(slide, c);
+    add(slide, '"', {
+      x: px(112), y: px(220), w: px(200), h: px(140),
+      fontSize: 96, fontFace: 'Courier New', bold: true, color: c.accent,
     });
-    addText(slide, quote, {
+    const q = pickHTMLText(section.querySelector('blockquote') || section.querySelector('.q'));
+    add(slide, q, {
       x: px(112), y: px(360), w: px(1696), h: px(440),
-      fontSize: 56, fontFace: 'Geist', color: c.fg,
+      fontSize: 48, fontFace: 'Geist', color: c.fg,
     });
-    if (cite) addText(slide, `— ${cite}`, {
+    const cite = pickText(section, 'cite') || pickText(section, '.cite');
+    if (cite) add(slide, `— ${cite}`, {
       x: px(112), y: px(840), w: px(1696), h: px(40),
-      fontSize: 18, fontFace: 'JetBrains Mono', color: c.muted,
+      fontSize: 18, fontFace: 'Courier New', color: c.muted,
     });
     return slide;
   }
 
   function buildStats(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    addEyebrow(slide, section, c);
-    addText(slide, text(section, 'h2'), {
+    bg(slide, c);
+    eyebrow(slide, section, c);
+    add(slide, pickText(section, 'h2'), {
       x: px(112), y: px(180), w: px(1696), h: px(80),
-      fontSize: 48, fontFace: 'Geist', bold: true, color: c.fg,
+      fontSize: 44, fontFace: 'Geist', bold: true, color: c.fg,
     });
-    const stats = all(section, '.stat');
+    const stats = pickAll(section, '.stat');
     const cols = Math.max(1, stats.length);
-    const colW = (1920 - 224) / cols;
+    const colW = (1696) / cols;
     stats.forEach((s, i) => {
-      const pre = text(s, '.v .pre');
-      const v = (s.querySelector('.v')?.cloneNode(true));
-      let value = '';
-      if (v) {
-        v.querySelectorAll('.pre, .sub').forEach(n => n.remove());
-        value = v.textContent.trim().replace(/\s+/g, ' ');
-      }
-      const lbl = text(s, '.lbl');
-      const sub = text(s, '.sub');
-      const isDark = s.classList.contains('dark');
       const x = 112 + i * colW;
-      slide.addShape('rect', {
-        x: px(x), y: px(360), w: px(colW - 24), h: px(360),
-        fill: { color: isDark ? c.fg : c.bg },
-        line: { color: isDark ? c.fg : c.muted, width: 1 },
+      const vEl = s.querySelector('.v')?.cloneNode(true);
+      let value = '';
+      let pre = '';
+      if (vEl) {
+        pre = pickText(vEl, '.pre');
+        vEl.querySelectorAll('.pre, .sub').forEach(n => n.remove());
+        value = vEl.textContent.trim().replace(/\s+/g, ' ');
+      }
+      const lbl = pickText(s, '.lbl');
+      const sub = pickText(s, '.sub');
+      if (pre) add(slide, pre, {
+        x: px(x), y: px(380), w: px(colW - 32), h: px(28),
+        fontSize: 14, fontFace: 'Courier New', color: c.accent,
       });
-      if (pre) addText(slide, pre, {
-        x: px(x + 32), y: px(388), w: px(colW - 88), h: px(28),
-        fontSize: 14, fontFace: 'JetBrains Mono', color: c.accent,
+      add(slide, value, {
+        x: px(x), y: px(412), w: px(colW - 32), h: px(140),
+        fontSize: 72, fontFace: 'Geist', bold: true, color: c.fg,
       });
-      addText(slide, value, {
-        x: px(x + 32), y: px(420), w: px(colW - 88), h: px(140),
-        fontSize: 84, fontFace: 'Geist', bold: true,
-        color: isDark ? c.bg : c.fg,
+      if (lbl) add(slide, lbl, {
+        x: px(x), y: px(560), w: px(colW - 32), h: px(28),
+        fontSize: 13, fontFace: 'Courier New', color: c.muted,
       });
-      if (lbl) addText(slide, lbl, {
-        x: px(x + 32), y: px(580), w: px(colW - 88), h: px(28),
-        fontSize: 13, fontFace: 'JetBrains Mono',
-        color: isDark ? c.bg : c.muted, charSpacing: 4,
-      });
-      if (sub) addText(slide, sub, {
-        x: px(x + 32), y: px(620), w: px(colW - 88), h: px(80),
-        fontSize: 14, fontFace: 'Geist',
-        color: isDark ? c.bg : c.muted,
+      if (sub) add(slide, sub, {
+        x: px(x), y: px(596), w: px(colW - 32), h: px(120),
+        fontSize: 14, fontFace: 'Geist', color: c.muted,
       });
     });
     return slide;
@@ -309,22 +269,18 @@
 
   function buildCode(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    addEyebrow(slide, section, c);
-    addText(slide, text(section, 'h2'), {
+    bg(slide, c);
+    eyebrow(slide, section, c);
+    add(slide, pickText(section, 'h2'), {
       x: px(112), y: px(180), w: px(1696), h: px(80),
-      fontSize: 40, fontFace: 'Geist', bold: true, color: c.fg,
+      fontSize: 36, fontFace: 'Geist', bold: true, color: c.fg,
     });
     const pre = section.querySelector('pre');
     if (pre) {
-      const code = pre.textContent.replace(/\n$/, '');
-      slide.addShape('rect', {
+      const code = pre.textContent.replace(/\n+$/, '');
+      add(slide, code, {
         x: px(112), y: px(290), w: px(1696), h: px(720),
-        fill: { color: c.bg }, line: { color: c.muted, width: 1 },
-      });
-      slide.addText(code, {
-        x: px(140), y: px(310), w: px(1640), h: px(680),
-        fontSize: 16, fontFace: 'JetBrains Mono', color: c.fg, valign: 'top',
+        fontSize: 16, fontFace: 'Courier New', color: c.fg,
       });
     }
     return slide;
@@ -332,63 +288,39 @@
 
   function buildResources(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    addEyebrow(slide, section, c);
-    addText(slide, text(section, 'h2'), {
+    bg(slide, c);
+    eyebrow(slide, section, c);
+    add(slide, pickText(section, 'h2'), {
       x: px(112), y: px(180), w: px(1696), h: px(80),
-      fontSize: 56, fontFace: 'Geist', bold: true, color: c.fg,
+      fontSize: 52, fontFace: 'Geist', bold: true, color: c.fg,
     });
-    const items = all(section, '.item').map(it => ({
-      title: text(it, '.t') || text(it, 'h3') || text(it, '.title'),
-      url: text(it, '.url'),
-      desc: text(it, '.desc') || text(it, 'p'),
-    }));
-    items.forEach((it, i) => {
+    pickAll(section, '.item').forEach((it, i) => {
       const y = 320 + i * 110;
-      addText(slide, it.title, {
-        x: px(112), y: px(y), w: px(700), h: px(36),
-        fontSize: 22, fontFace: 'Geist', bold: true, color: c.fg,
-      });
-      if (it.desc) addText(slide, it.desc, {
-        x: px(112), y: px(y + 38), w: px(700), h: px(60),
-        fontSize: 14, fontFace: 'Geist', color: c.muted,
-      });
-      if (it.url) addText(slide, it.url, {
-        x: px(840), y: px(y + 6), w: px(900), h: px(36),
-        fontSize: 16, fontFace: 'JetBrains Mono', color: c.accent,
-      });
+      const title = pickText(it, '.t') || pickText(it, 'h3') || pickText(it, '.title');
+      const url = pickText(it, '.url');
+      const desc = pickText(it, '.desc') || pickText(it, 'p');
+      add(slide, title, { x: px(112), y: px(y), w: px(700), h: px(36), fontSize: 22, bold: true, color: c.fg });
+      if (desc) add(slide, desc, { x: px(112), y: px(y + 38), w: px(700), h: px(60), fontSize: 14, color: c.muted });
+      if (url) add(slide, url, { x: px(840), y: px(y + 6), w: px(900), h: px(36), fontSize: 16, fontFace: 'Courier New', color: c.accent });
     });
     return slide;
   }
 
   function buildThanks(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    const heading = section.querySelector('h2');
-    if (heading) {
-      const runs = [];
-      heading.childNodes.forEach(n => {
-        if (n.nodeType === 3) runs.push({ text: n.textContent, options: { color: c.fg } });
-        else if (n.tagName === 'BR') runs.push({ text: '\n', options: { breakLine: true } });
-        else if (n.tagName.toLowerCase() === 'em') runs.push({ text: n.textContent, options: { color: c.accent } });
-        else runs.push({ text: n.textContent, options: { color: c.fg } });
-      });
-      slide.addText(runs, {
-        x: px(112), y: px(240), w: px(1696), h: px(360),
-        fontSize: 120, fontFace: 'Geist', bold: true, valign: 'middle',
-      });
-    }
-    const rows = all(section, '.links .row').map(r => ({
-      lbl: text(r, '.lbl'),
-      val: text(r, '.val'),
-    }));
-    rows.forEach((row, i) => {
+    bg(slide, c);
+    const heading = pickHTMLText(section.querySelector('h2'));
+    add(slide, heading, {
+      x: px(112), y: px(240), w: px(1696), h: px(360),
+      fontSize: 104, fontFace: 'Geist', bold: true, color: c.fg, valign: 'middle',
+    });
+    pickAll(section, '.links .row').forEach((r, i) => {
       const x = 112 + i * 440;
-      addText(slide, row.lbl, {
+      add(slide, pickText(r, '.lbl'), {
         x: px(x), y: px(720), w: px(420), h: px(28),
-        fontSize: 12, fontFace: 'JetBrains Mono', color: c.muted, charSpacing: 4,
+        fontSize: 12, fontFace: 'Courier New', color: c.muted,
       });
-      addText(slide, row.val, {
+      add(slide, pickText(r, '.val'), {
         x: px(x), y: px(752), w: px(420), h: px(40),
         fontSize: 22, fontFace: 'Geist', bold: true, color: c.fg,
       });
@@ -396,28 +328,25 @@
     return slide;
   }
 
-  // Generic fallback — eyebrow, h2, p, optional list.
   function buildGeneric(pptx, section, c) {
     const slide = pptx.addSlide();
-    bgFor(slide, c);
-    addEyebrow(slide, section, c);
-    const h = text(section, 'h2') || text(section, 'h1');
-    if (h) addText(slide, h, {
-      x: px(112), y: px(180), w: px(1696), h: px(180),
-      fontSize: 56, fontFace: 'Geist', bold: true, color: c.fg,
+    bg(slide, c);
+    eyebrow(slide, section, c);
+    const h = pickHTMLText(section.querySelector('h2')) || pickText(section, 'h1');
+    if (h) add(slide, h, {
+      x: px(112), y: px(180), w: px(1696), h: px(220),
+      fontSize: 52, fontFace: 'Geist', bold: true, color: c.fg,
     });
-    const p = text(section, 'p');
-    if (p) addText(slide, p, {
-      x: px(112), y: px(400), w: px(1696), h: px(120),
+    const p = pickText(section, 'p');
+    if (p) add(slide, p, {
+      x: px(112), y: px(420), w: px(1696), h: px(140),
       fontSize: 20, fontFace: 'Geist', color: c.muted,
     });
-    const lis = all(section, 'ul li, ol li').map(li => li.textContent.trim());
-    if (lis.length) {
-      slide.addText(lis.map(t => ({ text: `— ${t}`, options: { breakLine: true } })), {
-        x: px(112), y: px(540), w: px(1696), h: px(440),
-        fontSize: 22, fontFace: 'Geist', color: c.fg, valign: 'top',
-      });
-    }
+    const lis = pickAll(section, 'ul li, ol li').map(li => `— ${li.textContent.trim()}`);
+    if (lis.length) add(slide, lis.join('\n'), {
+      x: px(112), y: px(580), w: px(1696), h: px(440),
+      fontSize: 22, fontFace: 'Geist', color: c.fg, paraSpaceAfter: 6,
+    });
     return slide;
   }
 
@@ -445,21 +374,23 @@
   async function exportPPTX() {
     const PptxGenJS = await loadPptxgen();
     const pptx = new PptxGenJS();
-    pptx.defineLayout({ name: 'EFFECT_16_9', width: 13.333, height: 7.5 });
-    pptx.layout = 'EFFECT_16_9';
-
+    pptx.layout = 'LAYOUT_WIDE'; // predefined 13.333 × 7.5 in (16:9)
     const c = colors();
     const sections = document.querySelectorAll('deck-stage > section');
     const total = sections.length;
     sections.forEach((section, i) => {
-      const build = pickBuilder(section);
-      const slide = build(pptx, section, c);
-      if (slide && !section.classList.contains('s-title')) {
-        addChrome(slide, section, c, i + 1, total);
+      try {
+        const build = pickBuilder(section);
+        const slide = build(pptx, section, c);
+        if (slide && !section.classList.contains('s-title')) {
+          chrome(slide, section, c, i + 1, total);
+        }
+      } catch (err) {
+        console.error('slide', i + 1, 'failed:', err);
       }
     });
 
-    const title = (window.__TWEAKS && window.__TWEAKS.talkTitle) || 'Effect Slides';
+    const title = (window.__TWEAKS && window.__TWEAKS.talkTitle) || 'effect-slides';
     const safe = title.replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'slides';
     await pptx.writeFile({ fileName: `${safe}.pptx` });
   }
