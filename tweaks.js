@@ -208,13 +208,4 @@
   } else {
     buildThemeToggle();
   }
-
-  // Standalone (not embedded in design host): auto-open the panel so it's usable.
-  if (window.parent === window) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', showPanel);
-    } else {
-      showPanel();
-    }
-  }
 })();
