@@ -149,6 +149,66 @@
   // Announce after listener is live
   window.parent.postMessage({ type: '__edit_mode_available' }, '*');
 
+  // Always-visible floating theme toggle (independent of the Tweaks panel).
+  function buildThemeToggle() {
+    if (document.getElementById('theme-toggle')) return;
+    const btn = document.createElement('button');
+    btn.id = 'theme-toggle';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Toggle light/dark');
+    btn.innerHTML = '<span class="tt-icon" aria-hidden="true"></span><span class="tt-label"></span>';
+    const style = document.createElement('style');
+    style.textContent = `
+      #theme-toggle {
+        position: fixed; top: 16px; right: 16px;
+        z-index: 99998;
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 8px 12px;
+        background: var(--panel, #15151a);
+        color: var(--fg, #ededf0);
+        border: 1px solid var(--hairline-2, #2a2a31);
+        border-radius: 999px;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+      }
+      #theme-toggle:hover { border-color: var(--muted-2, #4a4a55); }
+      #theme-toggle .tt-icon {
+        width: 14px; height: 14px; border-radius: 50%;
+        background: var(--fg, #ededf0);
+        box-shadow: inset -4px -4px 0 0 var(--panel, #15151a);
+      }
+      html[data-theme="light"] #theme-toggle .tt-icon {
+        background: var(--fg);
+        box-shadow: none;
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(btn);
+    btn.addEventListener('click', () => {
+      const next = window.__TWEAKS.theme === 'dark' ? 'light' : 'dark';
+      window.__TWEAKS.theme = next;
+      apply(window.__TWEAKS);
+      syncPanel();
+      syncToggle();
+      window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { theme: next } }, '*');
+    });
+    syncToggle();
+  }
+  function syncToggle() {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    const t = window.__TWEAKS.theme;
+    btn.querySelector('.tt-label').textContent = t === 'dark' ? 'Dark' : 'Light';
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', buildThemeToggle);
+  } else {
+    buildThemeToggle();
+  }
+
   // Standalone (not embedded in design host): auto-open the panel so it's usable.
   if (window.parent === window) {
     if (document.readyState === 'loading') {
