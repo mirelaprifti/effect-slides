@@ -83,16 +83,23 @@
   .chrome-top .ct-c, .chrome-bot .ct-c { justify-self: center; }
   .chrome-top .ct-r, .chrome-bot .ct-r { justify-self: end; }
 
-  /* the [EFFECT] mark */
+  /* Effect wordmark — masked SVG colored by currentColor (theme-aware) */
   .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: inline-block;
+    width: 88px;
+    height: 19px;
+    vertical-align: middle;
     color: var(--fg);
-    font-weight: 500;
+    background-color: currentColor;
+    -webkit-mask: url(effect-logo.svg) left center / contain no-repeat;
+    mask: url(effect-logo.svg) left center / contain no-repeat;
+    font-size: 0;
+    line-height: 0;
+    text-indent: -9999px;
+    overflow: hidden;
   }
-  .brand::before { content: "["; color: var(--accent); }
-  .brand::after  { content: "]"; color: var(--accent); }
+  .brand::before, .brand::after { content: none; }
+  .chrome-bot .brand { width: 74px; height: 16px; }
 
   .pageno b { color: var(--fg); font-weight: 500; }
   .pageno .sep { color: var(--muted-2); padding: 0 4px; }
@@ -631,7 +638,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -660,7 +667,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -695,7 +702,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -720,7 +727,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -740,7 +747,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -760,7 +767,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -813,7 +820,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -851,7 +858,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -880,7 +887,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -915,7 +922,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -959,7 +966,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -982,7 +989,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -1050,7 +1057,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 
@@ -1083,7 +1090,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-r mono">effect · 2026</div>
+      <div class="ct-r mono"><span class="brand"></span> 2026</div>
     </div>
   </section>
 

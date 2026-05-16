@@ -46,9 +46,20 @@
     background: var(--bg);
     z-index: 10;
   }
-  .top .brand { color: var(--fg); font-weight: 500; }
-  .top .brand::before { content: "["; color: var(--accent-a); padding-right: 8px; }
-  .top .brand::after  { content: "]"; color: var(--accent-a); padding-left: 8px; }
+  .top .brand {
+    display: inline-block;
+    width: 102px;
+    height: 22px;
+    vertical-align: middle;
+    color: var(--fg);
+    background-color: currentColor;
+    -webkit-mask: url(effect-logo.svg) left center / contain no-repeat;
+    mask: url(effect-logo.svg) left center / contain no-repeat;
+    font-size: 0;
+    line-height: 0;
+    text-indent: -9999px;
+    overflow: hidden;
+  }
   .top .crumbs { justify-self: center; }
   .top .ver { justify-self: end; }
   .top .ver b { color: var(--fg); font-weight: 500; }

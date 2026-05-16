@@ -82,7 +82,21 @@
   .chrome .c-r { justify-self: end; }
   .chrome .pageno b { color: var(--fg); font-weight: 500; }
   .chrome .pageno .sep { color: var(--muted-2); padding: 0 6px; }
-  .chrome .effect-mark { letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg); font-weight: 500; }
+  .chrome .effect-mark {
+    display: inline-block;
+    width: 88px;
+    height: 19px;
+    vertical-align: middle;
+    color: var(--fg);
+    background-color: currentColor;
+    -webkit-mask: url(effect-logo.svg) left center / contain no-repeat;
+    mask: url(effect-logo.svg) left center / contain no-repeat;
+    font-size: 0;
+    line-height: 0;
+    text-indent: -9999px;
+    overflow: hidden;
+  }
+  .s-image .chrome .effect-mark { background-color: #fff; }
 
   /* ---------- CANVAS ---------- */
   .canvas {
