@@ -205,17 +205,28 @@
   .card .cta {
     margin-top: 8px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 24px;
     padding-top: 20px;
     border-top: 1px solid var(--hairline-2);
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
-    color: var(--fg);
     letter-spacing: 0.04em;
   }
-  .card .cta .arrow { color: var(--muted); }
-  .card:hover .cta .arrow { color: var(--fg); }
+  .card .cta a {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--fg);
+    text-decoration: none;
+    padding: 4px 0;
+  }
+  .card .cta a + a {
+    border-left: 1px solid var(--hairline-2);
+    padding-left: 24px;
+  }
+  .card .cta a .arrow { color: var(--muted); transition: color 0.18s ease; }
+  .card .cta a:hover .arrow { color: var(--fg); }
 
   /* ---------- HOW IT WORKS ---------- */
   .how {
@@ -294,10 +305,10 @@
 
 <section class="cards">
 
-  <a class="card a" href="Effect Template - Console.html">
-    <div class="preview">
+  <article class="card a">
+    <a class="preview" href="Effect Template - Console.html" aria-label="Open Console template">
       <img src="previews/console-title.png" alt="Console template preview" />
-    </div>
+    </a>
     <div class="body">
       <div class="badge"><span class="dot"></span>A · CONSOLE</div>
       <h2>Console <em>— terminal-inspired</em></h2>
@@ -308,14 +319,17 @@
       <div class="traits">
         <span>IDE chrome</span><span>brackets</span><span>line numbers</span><span>warm accent</span>
       </div>
-      <div class="cta"><span>Open template</span><span class="arrow">→</span></div>
+      <div class="cta">
+        <a href="Effect Template - Console.html"><span>Open template</span><span class="arrow">→</span></a>
+        <a href="downloads/effect-template-console.zip" download><span>Download .zip</span><span class="arrow">↓</span></a>
+      </div>
     </div>
-  </a>
+  </article>
 
-  <a class="card b" href="Effect Template - Manual.html">
-    <div class="preview">
+  <article class="card b">
+    <a class="preview" href="Effect Template - Manual.html" aria-label="Open Manual template">
       <img src="previews/manual-title.png" alt="Manual template preview" />
-    </div>
+    </a>
     <div class="body">
       <div class="badge"><span class="dot"></span>B · MANUAL</div>
       <h2>Manual <em>— editorial-technical</em></h2>
@@ -326,9 +340,12 @@
       <div class="traits">
         <span>big numerals</span><span>hairline grids</span><span>wide margins</span><span>cool accent</span>
       </div>
-      <div class="cta"><span>Open template</span><span class="arrow">→</span></div>
+      <div class="cta">
+        <a href="Effect Template - Manual.html"><span>Open template</span><span class="arrow">→</span></a>
+        <a href="downloads/effect-template-manual.zip" download><span>Download .zip</span><span class="arrow">↓</span></a>
+      </div>
     </div>
-  </a>
+  </article>
 
 </section>
 
