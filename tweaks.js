@@ -163,7 +163,7 @@
     const style = document.createElement('style');
     style.textContent = `
       #deck-controls {
-        position: fixed; top: 16px; right: 16px;
+        position: fixed; bottom: 16px; right: 16px;
         z-index: 99998;
         display: inline-flex; align-items: center; gap: 8px;
       }
