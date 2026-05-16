@@ -159,9 +159,6 @@
       <button id="theme-toggle" type="button" aria-label="Toggle light/dark">
         <span class="tt-icon" aria-hidden="true"></span><span class="tt-label"></span>
       </button>
-      <button id="export-pptx" type="button" aria-label="Export PPTX">
-        <span class="tt-label">Export PPTX</span>
-      </button>
     `;
     const style = document.createElement('style');
     style.textContent = `
@@ -203,18 +200,6 @@
       syncPanel();
       syncToggle();
       window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { theme: next } }, '*');
-    });
-
-    const exportBtn = wrap.querySelector('#export-pptx');
-    exportBtn.addEventListener('click', async () => {
-      if (typeof window.exportPPTX !== 'function') return;
-      const label = exportBtn.querySelector('.tt-label');
-      const original = label.textContent;
-      exportBtn.disabled = true;
-      label.textContent = 'Exporting…';
-      try { await window.exportPPTX(); }
-      catch (err) { console.error(err); alert('PPTX export failed: ' + err.message); }
-      finally { exportBtn.disabled = false; label.textContent = original; }
     });
 
     syncToggle();
