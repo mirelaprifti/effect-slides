@@ -18,8 +18,8 @@
     --hairline-2: #2a2a31;
     --panel: #131318;
     --panel-2: #181820;
-    --accent: oklch(0.72 0.16 28);
-    --accent-dim: oklch(0.72 0.16 28 / 0.18);
+    --accent: #00D492;
+    --accent-dim: rgba(0, 212, 146, 0.18);
     --k: #c79df0;  /* keyword */
     --s: #9bd180;  /* string */
     --c: #5a5a62;  /* comment */
@@ -37,8 +37,8 @@
     --hairline-2: #d2d2cd;
     --panel: #efefea;
     --panel-2: #e6e6e1;
-    --accent: oklch(0.55 0.16 28);
-    --accent-dim: oklch(0.55 0.16 28 / 0.12);
+    --accent: #00D492;
+    --accent-dim: rgba(0, 212, 146, 0.12);
     --k: #7a3aa8;
     --s: #2e7d3b;
     --c: #9c9c9f;
@@ -127,17 +127,18 @@
   /* eyebrow label */
   .eyebrow {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 14px;
+    font-size: 20px;
+    font-weight: 500;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 28px;
+    color: var(--fg);
+    margin-bottom: 32px;
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
   }
   .eyebrow .dot {
-    width: 6px; height: 6px; border-radius: 50%;
+    width: 9px; height: 9px; border-radius: 50%;
     background: var(--accent);
     display: inline-block;
   }
@@ -617,7 +618,7 @@
         <span class="where"><b data-tt="talk-loc">AMSTERDAM</b><span data-tt="talk-date">16 MAY 2026</span></span>
       </div>
 
-      <h1 class="title" data-tt="talk-title">Here goes the title of your presentation</h1>
+      <h1 class="title" data-tt="talk-title"></h1>
 
       <div class="t-foot">
         <div class="t-by">
@@ -630,7 +631,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -660,7 +661,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -696,7 +697,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -722,7 +723,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -743,7 +744,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -764,7 +765,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -818,7 +819,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -857,7 +858,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -887,7 +888,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -923,7 +924,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -968,7 +969,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -992,7 +993,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -1061,7 +1062,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -1095,7 +1096,7 @@
 
     <div class="chrome-bot">
       <div class="ct-l mono"><span data-tt="speaker-handle">@jsmith</span></div>
-      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline">Here goes the title of your presentation</div>
+      <div class="ct-c mono" style="text-transform:lowercase" data-tt="talk-title-inline"></div>
       <div class="ct-r mono">effect · 2026</div>
     </div>
   </section>
@@ -1104,8 +1105,8 @@
 
 <script>
   window.__TWEAKS = /*EDITMODE-BEGIN*/{
-    "theme": "dark",
-    "talkTitle": "Here goes the title of your presentation",
+    "theme": "light",
+    "talkTitle": "",
     "speakerName": "Johnathan Smith",
     "speakerHandle": "@jsmith",
     "talkLoc": "AMSTERDAM",
