@@ -149,19 +149,28 @@
   // Announce after listener is live
   window.parent.postMessage({ type: '__edit_mode_available' }, '*');
 
-  // Always-visible floating theme toggle (independent of the Tweaks panel).
+  // Always-visible floating controls — theme toggle + PPTX export.
   function buildThemeToggle() {
-    if (document.getElementById('theme-toggle')) return;
-    const btn = document.createElement('button');
-    btn.id = 'theme-toggle';
-    btn.type = 'button';
-    btn.setAttribute('aria-label', 'Toggle light/dark');
-    btn.innerHTML = '<span class="tt-icon" aria-hidden="true"></span><span class="tt-label"></span>';
+    if (document.getElementById('deck-controls')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'deck-controls';
+    wrap.className = 'export-hidden';
+    wrap.innerHTML = `
+      <button id="theme-toggle" type="button" aria-label="Toggle light/dark">
+        <span class="tt-icon" aria-hidden="true"></span><span class="tt-label"></span>
+      </button>
+      <button id="export-pptx" type="button" aria-label="Export PPTX">
+        <span class="tt-label">Export PPTX</span>
+      </button>
+    `;
     const style = document.createElement('style');
     style.textContent = `
-      #theme-toggle {
+      #deck-controls {
         position: fixed; top: 16px; right: 16px;
         z-index: 99998;
+        display: inline-flex; align-items: center; gap: 8px;
+      }
+      #deck-controls button {
         display: inline-flex; align-items: center; gap: 8px;
         padding: 8px 12px;
         background: var(--panel, #15151a);
@@ -173,20 +182,21 @@
         cursor: pointer;
         box-shadow: 0 6px 18px rgba(0,0,0,0.18);
       }
-      #theme-toggle:hover { border-color: var(--muted-2, #4a4a55); }
+      #deck-controls button:hover { border-color: var(--muted-2, #4a4a55); }
+      #deck-controls button:disabled { opacity: 0.6; cursor: progress; }
       #theme-toggle .tt-icon {
         width: 14px; height: 14px; border-radius: 50%;
         background: var(--fg, #ededf0);
         box-shadow: inset -4px -4px 0 0 var(--panel, #15151a);
       }
       html[data-theme="light"] #theme-toggle .tt-icon {
-        background: var(--fg);
-        box-shadow: none;
+        background: var(--fg); box-shadow: none;
       }
     `;
     document.head.appendChild(style);
-    document.body.appendChild(btn);
-    btn.addEventListener('click', () => {
+    document.body.appendChild(wrap);
+
+    wrap.querySelector('#theme-toggle').addEventListener('click', () => {
       const next = window.__TWEAKS.theme === 'dark' ? 'light' : 'dark';
       window.__TWEAKS.theme = next;
       apply(window.__TWEAKS);
@@ -194,6 +204,19 @@
       syncToggle();
       window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { theme: next } }, '*');
     });
+
+    const exportBtn = wrap.querySelector('#export-pptx');
+    exportBtn.addEventListener('click', async () => {
+      if (typeof window.exportPPTX !== 'function') return;
+      const label = exportBtn.querySelector('.tt-label');
+      const original = label.textContent;
+      exportBtn.disabled = true;
+      label.textContent = 'Exporting…';
+      try { await window.exportPPTX(); }
+      catch (err) { console.error(err); alert('PPTX export failed: ' + err.message); }
+      finally { exportBtn.disabled = false; label.textContent = original; }
+    });
+
     syncToggle();
   }
   function syncToggle() {
